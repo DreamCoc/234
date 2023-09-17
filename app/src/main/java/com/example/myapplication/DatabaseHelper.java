@@ -6,7 +6,10 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "mydatabase.db";
@@ -45,7 +48,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         contentValues.put(COLUMN_3, column3Value);
         contentValues.put(COLUMN_4, Arrays.toString(column4Value));
         db.insert(TABLE_NAME, null, contentValues);
+    }
 
+    public void addToDataBase (ArrayList<ArrayList<String>> getMainData,ArrayList<ArrayList<String[]>> getWordInBracket){
+       SQLiteDatabase db = this.getWritableDatabase();
+
+        ArrayList<String> form = getMainData.get(1);
+        ArrayList<String> name = getMainData.get(0);
+
+        for (int i = 0; i < form.size(); i++) {
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(COLUMN_1,replaceTextInBrackets(form.get(i)));
+            contentValues.put(COLUMN_3,name.get(i));
+
+            ArrayList<String[]> innerList = getWordInBracket.get(i);
+            StringBuilder stringBuilder = new StringBuilder();
+            for (String[] array : innerList) {
+                stringBuilder.append(array[0]).append(", ");
+            }
+            String result = stringBuilder.toString().trim();
+            contentValues.put(COLUMN_2, result);
+
+            db.insert(TABLE_NAME, null, contentValues);
+        }
     }
 
     public Cursor getData() {
@@ -54,4 +79,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return db.rawQuery(query, null);
     }
 
+    public static String replaceTextInBrackets(String text) {
+        Pattern pattern = Pattern.compile("\\((.*?)\\)");
+        Matcher matcher = pattern.matcher(text);
+        StringBuffer stringBuffer = new StringBuffer();
+
+        while (matcher.find()) {
+            String bracketContent = matcher.group(1);
+            String[] words = bracketContent.split(",");
+
+            if (words.length > 0) {
+                String replacement = words[0].trim();
+                matcher.appendReplacement(stringBuffer, replacement);
+            }
+        }
+        matcher.appendTail(stringBuffer);
+
+        return stringBuffer.toString();
+    }
 }
